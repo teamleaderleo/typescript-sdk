@@ -108,18 +108,14 @@ describe('Streamable HTTP session replay probe', () => {
                 request('GET', undefined, { sessionId: sessionId!, lastEventId: primingEventId! })
             );
             expect(firstReplay.status).toBe(200);
-            const firstText = await firstReplay.text();
-            expect(firstText).toContain('"id":"call-1"');
-            expect(firstText).toContain('"operationId":"operation-1"');
+            expect(parseToolPayload(await firstReplay.text())).toEqual({ operationId: 'operation-1', executions: 1 });
             expect(executions).toBe(1);
 
             const secondReplay = await transport.handleRequest(
                 request('GET', undefined, { sessionId: sessionId!, lastEventId: primingEventId! })
             );
             expect(secondReplay.status).toBe(200);
-            const secondText = await secondReplay.text();
-            expect(secondText).toContain('"id":"call-1"');
-            expect(secondText).toContain('"operationId":"operation-1"');
+            expect(parseToolPayload(await secondReplay.text())).toEqual({ operationId: 'operation-1', executions: 1 });
             expect(executions).toBe(1);
         } finally {
             await transport.close();
@@ -146,6 +142,23 @@ function request(
         headers,
         body: body ? JSON.stringify(body) : undefined
     });
+}
+
+function parseToolPayload(text: string): { operationId: string; executions: number } {
+    const data = text
+        .split('\n')
+        .find(line => line.startsWith('data:'))
+        ?.slice(5)
+        .trim();
+    if (!data) throw new Error('Replay did not contain SSE data');
+    const message = JSON.parse(data) as {
+        result?: { content?: Array<{ type?: unknown; text?: unknown }> };
+    };
+    const first = message.result?.content?.[0];
+    if (first?.type !== 'text' || typeof first.text !== 'string') {
+        throw new Error('Replay did not contain MCP text content');
+    }
+    return JSON.parse(first.text) as { operationId: string; executions: number };
 }
 
 async function waitFor(predicate: () => boolean): Promise<void> {
