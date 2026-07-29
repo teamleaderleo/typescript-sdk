@@ -9,6 +9,7 @@ on:
       - 'packages/client/test/client/streamableHttp.reconnectPublicProbe.test.ts'
       - 'packages/client/test/client/streamableHttp.reconnectTimerProbe.test.ts'
       - 'packages/client/test/client/streamableHttp.reconnectBudgetProbe.test.ts'
+      - 'packages/client/test/client/streamableHttp.protocolEraProbe.test.ts'
       - '.github/workflows/fieldwork-reconnect-probe.yml'
   workflow_dispatch:
 
@@ -40,3 +41,4 @@ jobs:
           streamableHttp.reconnectPublicProbe.test.ts
           streamableHttp.reconnectTimerProbe.test.ts
           streamableHttp.reconnectBudgetProbe.test.ts
+          streamableHttp.protocolEraProbe.test.ts
