@@ -11,6 +11,7 @@ on:
       - 'packages/client/test/client/streamableHttp.reconnectBudgetProbe.test.ts'
       - 'packages/client/test/client/streamableHttp.protocolEraProbe.test.ts'
       - 'packages/client/test/client/streamableHttp.legacyTimeoutProbe.test.ts'
+      - 'packages/server/test/server/streamableHttp.sessionReplayProbe.test.ts'
       - '.github/workflows/fieldwork-reconnect-probe.yml'
   workflow_dispatch:
 
@@ -44,3 +45,6 @@ jobs:
           streamableHttp.reconnectBudgetProbe.test.ts
           streamableHttp.protocolEraProbe.test.ts
           streamableHttp.legacyTimeoutProbe.test.ts
+      - run: >-
+          pnpm --filter @modelcontextprotocol/server test --
+          streamableHttp.sessionReplayProbe.test.ts
