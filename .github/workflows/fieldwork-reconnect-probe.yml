@@ -1,0 +1,50 @@
+name: Fieldwork reconnect probe
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/client/src/client/streamableHttp.ts'
+      - 'packages/client/test/client/streamableHttp.reconnectProbe.test.ts'
+      - 'packages/client/test/client/streamableHttp.reconnectPublicProbe.test.ts'
+      - 'packages/client/test/client/streamableHttp.reconnectTimerProbe.test.ts'
+      - 'packages/client/test/client/streamableHttp.reconnectBudgetProbe.test.ts'
+      - 'packages/client/test/client/streamableHttp.protocolEraProbe.test.ts'
+      - 'packages/client/test/client/streamableHttp.legacyTimeoutProbe.test.ts'
+      - 'packages/server/test/server/streamableHttp.sessionReplayProbe.test.ts'
+      - '.github/workflows/fieldwork-reconnect-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reconnect-probe:
+    name: reconnect-probe-node-${{ matrix.node }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: >-
+          pnpm --filter @modelcontextprotocol/client test --
+          streamableHttp.reconnectProbe.test.ts
+          streamableHttp.reconnectPublicProbe.test.ts
+          streamableHttp.reconnectTimerProbe.test.ts
+          streamableHttp.reconnectBudgetProbe.test.ts
+          streamableHttp.protocolEraProbe.test.ts
+          streamableHttp.legacyTimeoutProbe.test.ts
+      - run: >-
+          pnpm --filter @modelcontextprotocol/server test --
+          streamableHttp.sessionReplayProbe.test.ts
