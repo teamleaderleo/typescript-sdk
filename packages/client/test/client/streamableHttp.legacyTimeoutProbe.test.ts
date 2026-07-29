@@ -159,6 +159,37 @@ describe('legacy Streamable HTTP reconnect chain after protocol timeout', () => 
         }
     });
 
+    it('continues real default-scheduler GET traffic after the caller has timed out', async () => {
+        const fixture = createLegacyServer('keep-priming');
+        await new Promise<void>(resolve => fixture.server.listen(0, '127.0.0.1', resolve));
+        const port = (fixture.server.address() as AddressInfo).port;
+        const transport = new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp`), {
+            reconnectionOptions
+        });
+        const client = new Client({ name: 'legacy-default-timer-client', version: '1.0.0' });
+
+        try {
+            await client.connect(transport);
+            const request = client.request(
+                { method: 'tools/call', params: { name: 'slow', arguments: {} } },
+                { timeout: 60 }
+            );
+
+            await expect(request).rejects.toThrow('Request timed out');
+            await waitFor(() => fixture.cancelledCount === 1, 'legacy cancellation notification');
+            const getCountAfterTimeout = fixture.resumedGetCount;
+            await waitFor(
+                () => fixture.resumedGetCount > getCountAfterTimeout,
+                'another real resumed GET after the request promise rejected'
+            );
+
+            expect(fixture.resumedGetCount).toBeGreaterThan(getCountAfterTimeout);
+        } finally {
+            await client.close();
+            await closeServer(fixture.server);
+        }
+    });
+
     it('surfaces a late resumed response as an unknown message id after timeout cleanup', async () => {
         const fixture = createLegacyServer('late-response');
         await new Promise<void>(resolve => fixture.server.listen(0, '127.0.0.1', resolve));
