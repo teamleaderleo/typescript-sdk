@@ -15,9 +15,10 @@ describe('StreamableHTTPClientTransport public reconnect probe', () => {
     };
 
     async function waitForLength<T>(values: T[], count: number): Promise<void> {
-        for (let i = 0; i < 100; i++) {
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline) {
             if (values.length >= count) return;
-            await new Promise(resolve => setTimeout(resolve, 0));
+            await new Promise(resolve => setTimeout(resolve, 10));
         }
         throw new Error(`Timed out waiting for ${count} values; observed ${values.length}`);
     }
@@ -27,11 +28,14 @@ describe('StreamableHTTPClientTransport public reconnect probe', () => {
         const resumedEventIds: Array<string | undefined> = [];
         const server = createServer((req, res) => {
             if (req.method === 'POST') {
-                req.resume();
-                postCount += 1;
-                const stream = postCount === 1 ? { id: 'a-1', retry: 50 } : { id: 'b-1', retry: 5000 };
-                res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
-                res.end(`retry: ${stream.retry}\nid: ${stream.id}\n\n`);
+                req.on('error', () => {});
+                req.on('data', () => {});
+                req.on('end', () => {
+                    postCount += 1;
+                    const stream = postCount === 1 ? { id: 'a-1', retry: 50 } : { id: 'b-1', retry: 5000 };
+                    res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
+                    res.end(`retry: ${stream.retry}\nid: ${stream.id}\ndata:\n\n`);
+                });
                 return;
             }
 
